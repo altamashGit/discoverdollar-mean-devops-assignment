@@ -58,7 +58,7 @@ services:
     networks:
       - mean_network
     ports:
-      - "8082:80"
+      - "80:80"
 
 
 volumes:
