@@ -7,9 +7,11 @@ services:
     container_name: mean_mongodb
     restart: unless-stopped
     environment:
-      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME}
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
-      MONGO_INITDB_DATABASE: ${MONGO_DB}
+      MONGO_URL: mongodb://${MONGO_ROOT_USERNAME}:${MONGO_ROOT_PASSWORD}@mongodb:27017/${MONGO_DB}?authSource=admin
+    #environment:
+      #MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME}
+      #MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
+      #MONGO_INITDB_DATABASE: ${MONGO_DB}
     volumes:
       - mongo_data:/data/db
     networks:
@@ -21,14 +23,16 @@ services:
       retries: 5
 
   backend:
-    #image: ${DOCKER_USERNAME}/mean-frontend:${IMAGE_TAG}
+    image: ${DOCKER_USERNAME}/mean-backend:${IMAGE_TAG}
     #build: .
-    image: altamsh/mean-frontend:latest
+    #image: altamsh/mean-frontend:latest
     container_name: mean_backend
     restart: unless-stopped
+    env_file:
+      - .env
     environment:
       NODE_ENV: production
-      DB_HOST: mongodb
+      DB_HOST: meandb
       DB_PORT: 27017
       DB_USER: ${MONGO_ROOT_USERNAME}
       DB_PASSWORD: ${MONGO_ROOT_PASSWORD}
@@ -43,10 +47,10 @@ services:
 
 
 
-  frontend: 
-    #image: ${DOCKER_USERNAME}/mean-frontend:${IMAGE_TAG}
+  frontend:
+    image: ${DOCKER_USERNAME}/mean-frontend:${IMAGE_TAG}
     #build:
-    image: altamsh/mean-frontkend:latest  
+    #image: altamsh/mean-frontkend:latest
     container_name: mean_frontend
     restart: unless-stopped
     depends_on:
@@ -54,7 +58,7 @@ services:
     networks:
       - mean_network
     ports:
-      - "80:80"
+      - "8082:80"
 
 
 volumes:
