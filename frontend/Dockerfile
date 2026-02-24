@@ -1,11 +1,11 @@
 # stage 1
 FROM node:18-alpine AS build
 WORKDIR /app
-COPY package*.json .
+COPY package*.json ./
 RUN npm install
 COPY . .
 RUN npm run build -- --configuration production
-RUN find /app/dist -type f | head -20
+
 
 #stage 2
 
