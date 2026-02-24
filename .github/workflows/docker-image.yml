@@ -1,0 +1,78 @@
+name: Docker Image CI
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - devops-assessment
+  pull_request:
+    branches:
+      - devops-assessment
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # ── Docker Hub Login ──
+      - name: Login to Docker Hub
+        run: |
+          echo "${{ secrets.DOCKER_PASS }}" | docker login \
+            -u "${{ secrets.DOCKER_USER }}" \
+            --password-stdin
+
+      # ── Build Backend ──
+      - name: Build Backend Docker Image
+        run: |
+          docker build \
+            -f backend/Dockerfile \
+            -t ${{ secrets.DOCKER_USER }}/mean-backend:latest \
+            -t ${{ secrets.DOCKER_USER }}/mean-backend:${{ github.sha }} \
+            backend
+
+      # ── Build Frontend ──
+      - name: Build Frontend Docker Image
+        run: |
+          docker build \
+            -f frontend/Dockerfile \
+            -t ${{ secrets.DOCKER_USER }}/mean-frontend:latest \
+            -t ${{ secrets.DOCKER_USER }}/mean-frontend:${{ github.sha }} \
+            frontend
+
+      # ── Push Both Images ──
+      - name: Push Backend Image to Docker Hub
+        run: |
+          docker push ${{ secrets.DOCKER_USER }}/mean-backend:latest
+          docker push ${{ secrets.DOCKER_USER }}/mean-backend:${{ github.sha }}
+
+      - name: Push Frontend Image to Docker Hub
+        run: |
+          docker push ${{ secrets.DOCKER_USER }}/mean-frontend:latest
+          docker push ${{ secrets.DOCKER_USER }}/mean-frontend:${{ github.sha }}
+
+      # ── Deploy to EC2 ──
+      - name: Deploy to EC2
+        if: github.ref == 'refs/heads/devops-assessment'
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USER }}
+          key: ${{ secrets.VM_SSH_KEY }}
+          script: |
+            cd ~/discoverdollar-mean-devops-assignment
+
+            cat > .env <<EOF
+            DOCKER_USERNAME=${{ secrets.DOCKER_USER }}
+            IMAGE_TAG=${{ github.sha }}
+            MONGO_ROOT_USERNAME=${{ secrets.MONGO_ROOT_USERNAME }}
+            MONGO_ROOT_PASSWORD=${{ secrets.MONGO_ROOT_PASSWORD }}
+            MONGO_DB=${{ secrets.MONGO_DB }}
+            EOF
+
+            docker compose pull
+            docker compose up -d --remove-orphans
+            docker image prune -f
+            echo "✅ Deployed – $(date)"
