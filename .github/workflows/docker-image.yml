@@ -55,7 +55,7 @@ jobs:
 
       # ── Deploy to EC2 ──
       - name: Deploy to EC2
-        if: github.ref == 'refs/heads/devops-assessment'
+        if: github.ref == 'refs/heads/main'
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.VM_HOST }}
