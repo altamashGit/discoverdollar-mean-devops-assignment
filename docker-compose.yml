@@ -1,0 +1,66 @@
+version: "3.8"
+
+services:
+
+  mongodb:
+    image: mongo:4.0
+    container_name: mean_mongodb
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
+      MONGO_INITDB_DATABASE: ${MONGO_DB}
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - mean_network
+    healthcheck:
+      test: ["CMD", "mongo", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    #image: ${DOCKER_USERNAME}/mean-frontend:${IMAGE_TAG}
+    #build: .
+    image: altamsh/mean-frontend:latest
+    container_name: mean_backend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      DB_HOST: mongodb
+      DB_PORT: 27017
+      DB_USER: ${MONGO_ROOT_USERNAME}
+      DB_PASSWORD: ${MONGO_ROOT_PASSWORD}
+      DB_NAME: ${MONGO_DB}
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - mean_network
+    ports:
+      - "8080:8080"
+
+
+
+  frontend: 
+    #image: ${DOCKER_USERNAME}/mean-frontend:${IMAGE_TAG}
+    #build:
+    image: altamsh/mean-frontkend:latest  
+    container_name: mean_frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    networks:
+      - mean_network
+    ports:
+      - "80:80"
+
+
+volumes:
+  mongo_data:
+    driver: local
+
+networks:
+  mean_network:
+    driver: bridge
