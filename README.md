@@ -363,6 +363,7 @@ Docker container is running :
 <img width="1693" height="82" alt="image" src="https://github.com/user-attachments/assets/73343f65-b1a1-4dce-b214-113de3c9bc23" />
 
 UI RESULT :
+ - To confirm check the image Tag :  
 
 <img width="1914" height="974" alt="Screenshot 2026-02-25 005318" src="https://github.com/user-attachments/assets/9e2a1113-ed32-45b9-a5f9-cffa37dadb39" />
 
