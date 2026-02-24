@@ -352,6 +352,26 @@ docker compose up -d --build
 <img width="1604" height="472" alt="Screenshot 2026-02-24 212900" src="https://github.com/user-attachments/assets/4125c3d3-cbee-4ac5-a474-73908277559c" />
 
 ---
+## GitHub Actions – Pipeline Execution  
+
+GitHub Actions workflow showing successful build and deploy jobs.
+
+<img width="1890" height="965" alt="Screenshot 2026-02-25 004521" src="https://github.com/user-attachments/assets/93cdbe5e-9ef5-4c14-9c2f-278d4597c83d" />
+
+Docker container is running :
+
+<img width="1693" height="82" alt="image" src="https://github.com/user-attachments/assets/73343f65-b1a1-4dce-b214-113de3c9bc23" />
+
+UI RESULT :
+
+<img width="1914" height="974" alt="Screenshot 2026-02-25 005318" src="https://github.com/user-attachments/assets/9e2a1113-ed32-45b9-a5f9-cffa37dadb39" />
+
+
+
+
+
+
+---
  
 | Service     | URL                                                    |
 | ----------- | ------------------------------------------------------ |
