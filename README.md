@@ -1,7 +1,7 @@
 # MEAN Stack CRUD Application
 
->DiscoverDollar DevOps >Technical Assignment
->Full-stack MEAN (MongoDB · >Express · Angular · Node.js) >application, containerized >with Docker, deployed via >Docker Compose on an Ubuntu >VM, automated with GitHub >Actions CI/CD, and served >through an Nginx reverse >proxy.
+>DiscoverDollar DevOps Technical Assignment
+Full-stack MEAN (MongoDB · Express · Angular · Node.js) application, containerized with Docker, deployed via Docker Compose on an Ubuntu VM, automated with GitHub Actions CI/CD, and served through an Nginx reverse proxy.
 
 ---
 
@@ -23,9 +23,33 @@ Automated CI/CD pipeline on every git push
 Deployed on a cloud Ubuntu VM accessible via port 80
 
 ---
-Architecture Diagram
 
-<image>
+## Architecture Diagram
+
+                        Internet
+                            │
+                            ▼
+                    ┌───────────────┐
+                    │  Nginx Proxy  │  :80
+                    │  (Container)  │
+                    └──────┬────────┘
+                           │
+             ┌─────────────┴──────────────┐
+             │                            │
+             ▼                            ▼
+    ┌─────────────────┐         ┌──────────────────┐
+    │  Frontend       │         │  Backend         │
+    │  Angular + Nginx│         │  Node.js/Express │
+    │  (Container)    │         │  (Container)     │
+    └─────────────────┘         └────────┬─────────┘
+                                         │
+                                         ▼
+                                ┌─────────────────┐
+                                │    MongoDB       │
+                                │   (Container)    │
+                                │  [Persistent     │
+                                │   Volume]        │
+                                └─────────────────┘
 ---
 
 ✅ Prerequisites
@@ -44,7 +68,7 @@ Make sure these are installed on your local machine before developing:
 
 **Repository Structure**
 
-<tree image>
+<img width="634" height="917" alt="Screenshot 2026-02-24 210816" src="https://github.com/user-attachments/assets/c3feefe1-ab3d-4231-8712-5f9ce48b3770" />
 
 ---
 
@@ -75,14 +99,15 @@ npm insall
 node server.js
 ```
 
-<image>
+<img width="1087" height="371" alt="Screenshot 2026-02-24 020218" src="https://github.com/user-attachments/assets/31b75dcc-26e6-435a-b4ee-8b95a3c08e8f" />
 
 Result: 
 Search on web browser
 ```bash
  http://localhost:8080
  ```
-<image>
+<img width="545" height="247" alt="Screenshot 2026-02-24 020245" src="https://github.com/user-attachments/assets/f9054a74-386a-477c-842c-e5087f45d3f0" />
+
 
 4. Run the Frontend  
 
@@ -91,13 +116,14 @@ cd frontend
 npm install
 ng serve --port 8081
 ```
-<image>
+<img width="1341" height="595" alt="Screenshot 2026-02-24 015837" src="https://github.com/user-attachments/assets/a1cb6b64-9105-4058-8435-f4cd08a49be8" />  
+
 Result: 
-Search on web browser
+Search on web browser  
 ```bash
  http://localhost:8081
  ```
- <image>
+<img width="1498" height="474" alt="Screenshot 2026-02-24 015849" src="https://github.com/user-attachments/assets/cd36d1f1-5fe9-4e11-95be-857ea341964b" />
 
 ## Docker Setup  
 
@@ -116,7 +142,7 @@ Instance Type: t2.micro
 Security Group: Allow ports 22 (SSH), 80 (HTTP)  
 Key pair: Download assignment.pem file  
 
-<Ec2createiamge>
+<img width="1799" height="876" alt="Screenshot 2026-02-24 030143" src="https://github.com/user-attachments/assets/c2acfa9c-4768-434c-99aa-b6bed6eb72dd" />
 
 Step 2 – Install Docker on the VM  
 
@@ -126,7 +152,9 @@ SSH into your VM:
 ssh -i "assignment.pem" ubuntu@<VM_PUBLIC_IP>.ap-south-1.compute.amazonaws.com
 ```
 
-<ssh_iamge>
+<img width="1105" height="798" alt="Screenshot 2026-02-24 030510" src="https://github.com/user-attachments/assets/07126c98-be5e-4ffa-ac08-b408947d3578" />
+
+## Docker Setup
 
 Install Docker:  
 
@@ -160,5 +188,229 @@ newgrp docker
 docker --version
 docker compose version
 ```
-## Docker Setup
+
+
+## Frontend Dockerfile (Angular + Nginx)  
+i use a multi-stage build to optimize the image size
+
+```bash
+# stage 1
+FROM node:18-alpine AS build
+WORKDIR /app
+COPY package*.json ./
+RUN npm install
+COPY . .
+RUN npm run build -- --configuration production
+
+
+#stage 2
+
+FROM nginx:alpine
+RUN rm /usr/share/nginx/html/*
+RUN rm /etc/nginx/conf.d/default.conf
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY --from=build /app/dist/angular-15-crud/ /usr/share/nginx/html
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]
+```
+
+---
+## nginx.conf  
+This configuration:  
+Serves the Angular frontend  
+Proxies API requests to the backend service  
+
+```bash
+server {
+    listen 80;
+
+     # Serve frontend
+    location / {
+        root /usr/share/nginx/html;
+        index index.html;
+        try_files $uri $uri/ /index.html;
+    }
+     # Proxy API requests to backend
+    location /api/ {
+        proxy_pass http://backend:8080;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+}
+
+```
+---
+## Push Frontend Image to Docker Registry &
+
+```bash
+docker build -t <docker-username>/mean-frontend:latest .
+docker build -t <docker-username>/mean-backend:latest .
+docker login
+docker -p
+docker push <docker-username>/mean-frontend:latest .
+docker push <docker-username>/mean-backend:latest .
+```
+---
+
+## Docker compose file
+
+## Environment Variables (.env)  
+Created a .env file in the root directory:
+
+```bash
+DOCKER_USERNAME=altamsh
+IMAGE_TAG=latest
+
+MONGO_ROOT_USERNAME=admin
+MONGO_ROOT_PASSWORD=DeVoLeper@#321&123
+MONGO_DB=meandb
+```
+
+---
+## Docker Compose Configuration
+
+docker-compose.yml  
+
+```bash
+version: "3.8"
+
+services:
+
+  mongodb:
+    image: mongo:4.0
+    container_name: mean_mongodb
+    restart: unless-stopped
+    environment:
+      MONGO_URL: mongodb://${MONGO_ROOT_USERNAME}:${MONGO_ROOT_PASSWORD}@mongodb:27017/${MONGO_DB}?authSource=admin
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - mean_network
+    healthcheck:
+      test: ["CMD", "mongo", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    image: ${DOCKER_USERNAME}/mean-backend:${IMAGE_TAG}
+    container_name: mean_backend
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      DB_HOST: meandb
+      DB_PORT: 27017
+      DB_USER: ${MONGO_ROOT_USERNAME}
+      DB_PASSWORD: ${MONGO_ROOT_PASSWORD}
+      DB_NAME: ${MONGO_DB}
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - mean_network
+    ports:
+      - "8080:8080"
+
+
+
+  frontend:
+    image: ${DOCKER_USERNAME}/mean-frontend:${IMAGE_TAG}
+    container_name: mean_frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    networks:
+      - mean_network
+    ports:
+      - "80:80"
+
+
+volumes:
+  mongo_data:
+    driver: local
+
+networks:
+  mean_network:
+    driver: bridge
+```
+
+## Run the Application
+```bash
+docker compose up -d --build
+```
+---
+### Contianer ruuning
+
+<img width="900" height="145" alt="Screenshot 2026-02-24 213126" src="https://github.com/user-attachments/assets/9ab4be6b-ea49-4fab-9ec9-a1ae35aaa4df" />
+---
+  
+## RESULT:
+<img width="1877" height="269" alt="Screenshot 2026-02-24 212831" src="https://github.com/user-attachments/assets/a1f992af-ce21-4dd8-89aa-925c2cb43f85" />
+
+<img width="1604" height="472" alt="Screenshot 2026-02-24 212900" src="https://github.com/user-attachments/assets/4125c3d3-cbee-4ac5-a474-73908277559c" />
+
+---
  
+| Service     | URL                                                    |
+| ----------- | ------------------------------------------------------ |
+| Frontend    | http://public_ip:80                                    |
+| Backend API | [http://public_ip/api                                  |
+| MongoDB     | Internal Docker Network                                |
+
+## Troubleshoot
+### Troubleshooting: Frontend Could Access UI but Could Not Save Data to MongoDB (Docker Setup)
+
+While running the container, I was able to access the frontend, but when I tried to post data, it was not getting saved in the database.
+
+First, I checked if MongoDB was running and confirmed that the backend was also running. Everything seemed fine. Then I checked the logs using: 
+
+```bash
+docker logs <container-id>
+```  
+<img width="943" height="87" alt="image" src="https://github.com/user-attachments/assets/37a8ea46-0177-4593-85d5-868f41ab6c88" />
+
+The logs showed that the database was connected successfully.
+
+After that, I opened the browser and checked the Network → Headers tab. There I saw:
+
+```bash
+Request URL: http://public_ip/api/tutorials
+```
+
+ This meant that the request was using localhost. Inside Docker, localhost refers to the container itself, not other containers or services. So MongoDB or the backend service was not being accessed properly through the network.
+
+To fix this issue, I updated the MongoDB configuration file and removed localhost so that the Nginx proxy could call the backend service using the correct host IP and port.
+
+After making the changes, I stopped the running containers and ebuilt and started them again :
+
+```bash
+docker compose down
+docker compose up -d
+```
+<img width="1702" height="86" alt="Screenshot 2026-02-24 211850" src="https://github.com/user-attachments/assets/41a41def-9c78-4686-9c79-11b1c123a028" />  
+
+After that, when I checked the Network tab again, I saw:  
+
+```bash
+Request URL
+http://13.201.30.235/api/tutorials
+Request Method
+POST
+Status Code
+200 OK
+Remote Address
+13.201.30.235:80
+Referrer Policy
+strict-origin-when-cross-origin
+```
+
+<img width="1642" height="775" alt="Screenshot 2026-02-24 211952" src="https://github.com/user-attachments/assets/c260fb7d-eb6a-48c5-bbfc-c994a57c6232" />
+
+
+Now the API was working correctly, and the data was successfully being stored in the database.
+
+Conclusion:
+
+The issue happened because localhost was used inside Docker. In Docker, localhost points to the same container, not other services. After updating the configuration and using the correct host IP, the backend and MongoDB started communicating properly.
