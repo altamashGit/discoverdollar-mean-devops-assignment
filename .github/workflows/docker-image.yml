@@ -4,10 +4,10 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - devops-assessment
+      - main
   pull_request:
     branches:
-      - devops-assessment
+      - main
 
 jobs:
   build:
